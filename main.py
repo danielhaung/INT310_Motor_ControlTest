@@ -1,11 +1,10 @@
 # main.py
 # 主程式入口，負責整合各模組並執行馬達控制流程
 
-from comm import send_command
+from comm import send_modbus_command
 
 def main():
-    # 這裡直接發送指令，例如 "START"
-    send_command("START")
+    send_modbus_command()
 
 if __name__ == "__main__":
     main()
