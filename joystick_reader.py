@@ -6,7 +6,7 @@ DIR_DEADZONE  = 0.20   # 方向輪死區 ±0.200
 
 # 放大倍率
 MOVE_SCALE = 500       # 行進輪倍率
-DIR_SCALE  = 3600      # 方向輪倍率為要到的位置
+DIR_SCALE  = 1      # 方向輪倍率為要到的位置
 
 def apply_deadzone(v, dz):
     """一般死區處理"""
