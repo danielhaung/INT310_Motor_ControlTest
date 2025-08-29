@@ -88,6 +88,6 @@ def set_speed(ser: serial.Serial, rpm: int, slave_id: int, label: str | None = N
 
     lo, hi = int32_to_le_words(internal_val)
     frame = frame_10_words(slave_id, 0x028A, [lo, hi])
-    desc = label if label is not None else f"速度 {rpm} rpm"
+    desc = label if label is not None else f"速度 {rpm} rpm" #
     send_frame(ser, frame, desc)
     time.sleep(0.2)
