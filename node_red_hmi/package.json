@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "crc": "^4.3.2",
+    "dayjs": "^1.11.18",
+    "lodash": "^4.17.21",
+    "nanoid": "^5.1.5",
+    "node-red-dashboard": "^3.6.6"
+  }
+}
