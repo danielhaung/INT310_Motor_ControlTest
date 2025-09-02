@@ -24,7 +24,7 @@ init_speed_mode(ser, 2, acc_dec=200) #行進輪
 # set_speed(ser, 0, 3)     # 100 rpm
 # time.sleep(1)
 # init_position_mode(ser, 2, acc_dec=0x0D00, speed_rpm=1000) #行進輪
-init_position_mode(ser, 3, acc_dec=0x0D40, speed_rpm=500)  #轉向輪
+init_position_mode(ser, 3, acc_dec=0x0D40, speed_rpm=700)  #轉向輪
 # move_to_position(ser, 0, 3, use_turns=True, gear_ratio=1) 
 # immediate_stop_if_not_reached(ser, 3)
 # move_to_position(ser, 1, 3, use_turns=True, gear_ratio=1) 
@@ -44,8 +44,10 @@ try:
             pulses_per_rev=pulses_per_rev
         ) 
         if enable == True:       
+            #direction = - direction
+            movement = -movement
             set_speed(ser, movement, 2)
-            move_to_position(ser, direction, 3, use_turns=True, gear_ratio=10) 
+            move_to_position(ser, direction, 3, use_turns=True, gear_ratio=5) 
             print(
                 f"行進輪: {state_2['actual_speed_rpm']:.1f} rpm | "
                 f"方向輪: 位置 {state_3['position_turns']:.2f} 度 | "
