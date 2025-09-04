@@ -4,7 +4,7 @@ from state_api import *
 from external_encoder_api import *
 import serial
 import time
-from joystick_reader import init_joystick, read_joystick
+from zjrcjn_joy_reader import init_joystick, read_joystick
 
 ser = serial.Serial("/dev/ttyUSB0", 115200,
                     bytesize=serial.EIGHTBITS,
@@ -48,7 +48,7 @@ try:
             if last_direction is not None and (direction * last_direction < 0):
                 immediate_stop_if_not_reached(ser, 3, tag="未達目標立即停止")
             if int(state_3['actual_speed_rpm']) == 0:
-                move_to_position(ser, direction, 3, use_turns=True, gear_ratio=120)
+                move_to_position(ser, direction, 3, use_turns=True, gear_ratio=5)
             print(
                 f"行進輪: {state_2['actual_speed_rpm']:.1f} rpm | "
                 f"方向輪: 位置 {state_3['position_turns']:.2f} 度 | "
@@ -58,7 +58,7 @@ try:
             last_direction = direction  
         else:
             set_speed(ser, 0, 2)
-            move_to_position(ser, 0, 3, use_turns=True, gear_ratio=120) #跟隨車gear_ratio=10
+            move_to_position(ser, 0, 3, use_turns=True, gear_ratio=5) #跟隨車gear_ratio=10
             # 寫入位置為 0 並驗證
 
         #time.sleep(0.01)

@@ -176,4 +176,3 @@ if __name__ == "__main__":
             ser.close()
         except Exception:
             pass
-
