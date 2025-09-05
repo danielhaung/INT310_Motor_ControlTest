@@ -5,23 +5,30 @@
 #
 # 來源數據：讀取 D21..D27（D24~D27 = LX/LY/RX/RY，單位=原值/100）
 # 映射：
-#   direction = RX -> 死區 -> * DIR_SCALE
+#   direction = RX -> 死區 -> 階梯量化(含微滯回) -> * DIR_SCALE
 #   movement  = LY  -> 反向 + 死區 -> * MOVE_SCALE
 #   enable    = (D21.b7 == 1 無線OK) AND (D21.b4 == 1 非急停)
 #
 # 與 pygame 版一致的參數：
 MOVE_DEADZONE = 0.20   # 行進輪死區
 DIR_DEADZONE  = 0.20   # 方向輪死區
-MOVE_SCALE    = 500    # 行進輪倍率（速度用）
+MOVE_SCALE    = 700    # 行進輪倍率（速度用）
 DIR_SCALE     = 1      # 方向輪倍率（目標位置量）
 
+# —— 方向輪階梯量化參數（可依需求調整）——
+DIR_STEP_SPLIT = 1.0   # 分段臨界：|x| < 1.0 用小階；>=1.0 用大階
+DIR_STEP_SMALL = 0.1   # 小階（|x| < 1.0）
+DIR_STEP_LARGE = 1.0   # 大階（|x| >= 1.0）
+HYSTERESIS_EPS = 0.05  # 微滯回帶寬（單位=軸值），避免臨界抖動
+
 import time
+import math
 import serial
 
 # ======= 請依現場調整 =======
-PORT      = "/dev/ttyUSB1"     # 例如 Windows 可用 "COM3"
-BAUDRATE  = 9600
-SLAVE_ID  = 2                  # 接收端站號
+PORT      = "/dev/ttyUSB2"     # 例如 Windows 可用 "COM3"
+BAUDRATE  = 115200
+SLAVE_ID  = 1                  # 接收端站號
 TIMEOUT_S = 0.2
 # ===========================
 
@@ -55,6 +62,35 @@ def _u16_to_s16(v: int) -> int:
 
 def apply_deadzone(v: float, dz: float) -> float:
     return 0.0 if abs(v) < dz else v
+
+# —— 往零截斷的階梯量化（含微滯回）——
+_last_dir_val = 0.0  # 記錄上次方向輪量化後輸出（倍率前）
+
+def _quantize_towards_zero(x: float, step: float) -> float:
+    # 正數用 floor，負數用 ceil 的等價：結果一律朝 0 靠攏
+    return math.copysign(math.floor(abs(x) / step) * step, x)
+
+def _stair_quantize_rx_with_hysteresis(x: float) -> float:
+    """
+    先依 |x| 選階距，再做往零量化。若 x 落在上次輸出 ±HYSTERESIS_EPS 內，維持上次輸出避免抖動。
+    注意：此函式應在倍率前呼叫（以軸值為單位比較滯回）。
+    """
+    global _last_dir_val
+
+    # 若已落在死區後為 0，直接重置狀態避免殘留
+    if x == 0.0:
+        _last_dir_val = 0.0
+        return 0.0
+
+    step = DIR_STEP_SMALL if abs(x) < DIR_STEP_SPLIT else DIR_STEP_LARGE
+    candidate = _quantize_towards_zero(x, step)
+
+    # 若還在上一次輸出 ±ε 內，維持原值；否則更新為新階梯
+    if abs(x - _last_dir_val) <= HYSTERESIS_EPS:
+        return _last_dir_val
+    else:
+        _last_dir_val = candidate
+        return candidate
 
 # ===== 對外：與 pygame 版一致的介面 =====
 
@@ -132,12 +168,13 @@ def read_joystick(js):
     axis0_raw = RX          # 方向輪
     axis1_raw = LY          # 行進輪（將在下方反向）
 
-    # 死區
-    dir_val  = 0.0 if -DIR_DEADZONE <= axis0_raw <= DIR_DEADZONE else axis0_raw
-    move_val = -apply_deadzone(axis1_raw, MOVE_DEADZONE)  # **反向** 與 pygame 版一致
+    # —— 方向輪：死區 → 階梯量化(含微滯回) → 倍率 ——
+    dir_val = 0.0 if -DIR_DEADZONE <= axis0_raw <= DIR_DEADZONE else axis0_raw
+    dir_val = _stair_quantize_rx_with_hysteresis(dir_val)  # 階梯量化 + 滯回
+    dir_val *= DIR_SCALE
 
-    # 倍率
-    dir_val  *= DIR_SCALE
+    # —— 行進輪：反向 + 死區 → 倍率 ——
+    move_val = -apply_deadzone(axis1_raw, MOVE_DEADZONE)  # **反向** 與 pygame 版一致
     move_val *= MOVE_SCALE
 
     # 未使能時輸出歸零（與 pygame 版按鈕未按下一致）

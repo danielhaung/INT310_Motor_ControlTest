@@ -21,9 +21,9 @@ DIR_DEADZONE  = 0.20   # 方向輪死區
 MOVE_SCALE    = 800    # 行進輪倍率（速度用）
 DIR_SCALE     = 1      # 方向輪倍率（目標位置量）
 
-PORT      = "/dev/ttyUSB1"     # 例如 Windows 可用 "COM3"
-BAUDRATE  = 9600
-SLAVE_ID  = 2                  # 接收端站號
+PORT      = "/dev/ttyUSB0"     # 例如 Windows 可用 "COM3"
+BAUDRATE  = 115200
+SLAVE_ID  = 1                  # 接收端站號
 TIMEOUT_S = 0.2
 HZ        = 5                  # 測試迴圈頻率
 DEBUG     = False              # 顯示原始值與位元
